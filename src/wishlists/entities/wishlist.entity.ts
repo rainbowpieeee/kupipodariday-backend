@@ -10,6 +10,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+// @Entity() — декоратор обозначает, что мы описываем модель и на основании этой модели нужно создать таблицу
+
 @Entity()
 export class Wishlist {
   @PrimaryGeneratedColumn()
