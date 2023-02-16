@@ -28,7 +28,7 @@ export class OffersService {
     return this.offersRepository.findOneBy({ id });
   }
 
-  async update() {
+  async update(id: number, updateOfferDto: UpdateOfferDto) {
 
   }
 
