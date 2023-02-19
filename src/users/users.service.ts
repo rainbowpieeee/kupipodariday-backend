@@ -1,9 +1,11 @@
+import * as bcrypt from 'bcrypt';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
+import { hashPassword } from 'src/utils/hash';
 
 @Injectable()
 export class UsersService {
@@ -13,7 +15,9 @@ export class UsersService {
 	  ) {}
 	
 	  async create(createUserDto: CreateUserDto): Promise<User> {
-		return this.userRepository.save(createUserDto);
+		const { password, ...result} = createUserDto;
+    	const hash = await hashPassword(password);
+    	return this.userRepository.save({password: hash, ...result});
   }
 
   async findAll(): Promise<User[]> {
@@ -21,16 +25,28 @@ export class UsersService {
   }
 
   async findOne(id: number): Promise<User> {
-    return this.userRepository.findOneBy({ id });
+    console.log('id in find one', id);
+    return this.userRepository.findOneBy({ id: id });
   }
 
-  async findByUserName(username: string): Promise<User> {}
+  async findByUserName(username: string): Promise<User> {
+    return this.userRepository.findOneBy({username})
+  }
   
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
     await this.userRepository.update(id, updateUserDto);
     return this.findOne(id);
   }
 
+  async updateUserData(id: number, updateUserDto: UpdateUserDto) {
+
+    const { password } = updateUserDto;    
+    if (password) {
+      return this.userRepository.update(id, {...updateUserDto, password: await hashPassword(password),
+      });
+    } else return this.userRepository.update(id, updateUserDto)
+  }
+  
   async remove(id: number) {
     const deletedUser = await this.findOne(id);
     await this.userRepository.delete(id);

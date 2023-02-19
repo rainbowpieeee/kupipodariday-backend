@@ -11,16 +11,19 @@ export class AuthController {
     private userService: UsersService,
   ) {}
 
+  @Post('signup')
+  async signup(@Body() createUserDto: CreateUserDto) {
+    /* При регистрации, создаём пользователя и генерируем для него токен */
+    const user = await this.userService.create(createUserDto);    
+    return this.authService.auth(user);
+  }
+
   @UseGuards(LocalGuard)
   @Post('signin')
   signin(@Req() req): { access_token: string } {
+	/* Генерируем для пользователя JWT токен */
+	console.log('sign in', req.user);
     return this.authService.auth(req.user);
-  }
-
-  @Post('signup')
-  async signup(@Body() createUserDto: CreateUserDto) {
-    const user = await this.userService.create(createUserDto);
-    return this.authService.auth(user);
   }
 }
 
