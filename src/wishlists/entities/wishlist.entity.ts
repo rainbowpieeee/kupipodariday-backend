@@ -1,10 +1,13 @@
 import { IsUrl, Length } from 'class-validator';
 import { User } from 'src/users/entities/user.entity';
+import { Wish } from 'src/wishes/entities/wish.entity';
 
 import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -29,7 +32,7 @@ export class Wishlist {
   name: string;
 
   //description — описание подборки, строка до 1500 символов;
-  @Column()
+  @Column({ nullable: true })
   @Length(1, 1500)
   description: string;
 
@@ -41,4 +44,9 @@ export class Wishlist {
   //owner - привязка к владельцу
   @ManyToOne(() => User, (user) => user.id)
   owner: User;
+
+  //items -  желания
+  @ManyToMany(() => Wish)
+  @JoinTable()
+  items: Wish[]
 }

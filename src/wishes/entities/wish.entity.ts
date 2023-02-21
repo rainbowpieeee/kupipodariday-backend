@@ -43,7 +43,7 @@ export class Wish {
   price: number;
 
   // raised — сумма предварительного сбора или сумма, которую пользователи сейчас готовы скинуть на подарок. Также округляется до сотых.
-  @Column()
+  @Column({ nullable: true })
   @IsInt()
   raised: number;
 

@@ -20,6 +20,4 @@ export class CreateWishDto {
   @Length(1, 1240)
   description: string;
 
-  @IsInt()
-  raised: number;
 }

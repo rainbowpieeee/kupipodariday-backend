@@ -1,3 +1,4 @@
+import { NotEquals } from 'class-validator';
 import { User } from 'src/users/entities/user.entity';
 import { Wish } from 'src/wishes/entities/wish.entity';
 import {
@@ -29,7 +30,11 @@ export class Offer {
   item: Wish;
 
   //amount — сумма заявки, округляется до двух знаков после запятой;
-  @Column()
+  @Column({
+    scale: 2,
+    type: 'decimal'    
+  })
+  @NotEquals(0)
   amount: number;
 
   //hidden — флаг, который определяет показывать ли информацию о скидывающемся в списке. По умолчанию равен false.

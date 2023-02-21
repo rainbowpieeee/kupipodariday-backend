@@ -8,7 +8,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
   constructor(private authService: AuthService) {
     super();
   }
-  //TODO если имя вводить не верно выводит error: Cannot read properties of null (reading 'password')
+  
   async validate(username: string, password: string) {
     const user = await this.authService.validatePassword(username, password);
 
