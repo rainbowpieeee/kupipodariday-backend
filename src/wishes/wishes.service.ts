@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/users/entities/user.entity';
+import { UsersService } from 'src/users/users.service';
 import { FindManyOptions, Repository } from 'typeorm';
 import { CreateWishDto } from './dto/create-wish.dto';
 import { UpdateWishDto } from './dto/update-wish.dto';
@@ -10,7 +11,8 @@ import { Wish } from './entities/wish.entity';
 export class WishesService {
   constructor(
     @InjectRepository(Wish)
-    private wishesRepository: Repository<Wish>,
+    private wishesRepository: Repository<Wish>,   
+    private readonly userService: UsersService
   ) {}
 
   async create(createWishDto: CreateWishDto, owner: User) {
@@ -49,29 +51,35 @@ export class WishesService {
   }
 
   async findLastWishes(): Promise<Wish[]> {
-    return this.wishesRepository.find({ order: { createdAt: 'DESC'}});
+    return this.wishesRepository.find({ take: 40, order: { createdAt: 'DESC'}});
   }
 
   async findTopWishes(): Promise<Wish[]> {
-    return this.wishesRepository.find({ order: { copied: 'DESC'}})
+    return this.wishesRepository.find({  take: 10, order: { copied: 'DESC'}}) // 10 in check list
   }
 
   async copyLikedWish(wishId: number, userId: number) {
-    // TODO дописать!
-    const wish = await this.findOne(wishId);  
-    console.log('wish', wish)
-    if (!wish) {
-      throw new BadRequestException()
-    }  
-    await this.wishesRepository.update(wishId, { copied: ++wish.copied});
+    const wish = await this.findOne(wishId);
+    const wishCopyCounter = wish.copied++;
+    await this.wishesRepository.update(wishId, {
+      copied: wishCopyCounter
+    });
 
-   // const currentOwner = await this.usersRepository.findOne(userId);
 
-    /*const copiedWish = {
+    const currentUser = await this.userService.findOne(userId);
+
+    const copiedWish = {
       ...wish,
-      owner: currentOwner,
-    }*/
+      owner: currentUser,
+      copied: 0,
+      raised: 0,
+      offers: []
+    }
 
+    delete copiedWish.id; // to create sa copy, otherwice rewrite the original
+    const createCopiedWish = await this.create(copiedWish, currentUser);
+
+    return createCopiedWish;
   }
 
   async find(options: FindManyOptions<Wish>): Promise<Wish[]> {

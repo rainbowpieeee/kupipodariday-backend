@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsOptional, Length } from 'class-validator';
+import { IsEmail, IsOptional, Length } from 'class-validator';
 
 export class UpdateUserDto {
   @Length(2, 30)

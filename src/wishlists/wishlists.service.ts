@@ -16,7 +16,6 @@ export class WishlistsService {
   ) {}
 
   async create(createWishlistDto: CreateWishlistDto, user: User): Promise<Wishlist> {    
-    //console.log('user in wishlist', user);
     const wishes = await this.wishesService.find({
       where: { id: In(createWishlistDto.itemId || [])},
     });
@@ -27,7 +26,6 @@ export class WishlistsService {
       items: wishes      
     });
 
-    //console.log('new wishList', wishList);
     return this.wishListRepository.save(wishList);
   }
 

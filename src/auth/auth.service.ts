@@ -1,5 +1,5 @@
 import * as bcrypt from 'bcrypt';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
@@ -17,12 +17,17 @@ export class AuthService {
     return { access_token: this.jwtService.sign(payload) };
   }
 
-  async validatePassword(username: string, password: string) {
-	//TODO если имя вводить не верно выводит error: Cannot read properties of null (reading 'password')
+  async validatePassword(username: string, password: string) {    
     const user = await this.userService.findByUserName(username);
 
-     /* В идеальном случае пароль обязательно должен быть захэширован */
-    const passwordIsCompare = await bcrypt.compare(password, user.password);
+    if (!user) {
+      throw new UnauthorizedException('Неверное имя пользователя или пароль')
+    }
+    const passwordIsCompare = await bcrypt.compare(password, user.password);    
+
+    if (!passwordIsCompare) {
+      throw new UnauthorizedException('Неверное имя пользователя или пароль')
+    }
 
     if (user && passwordIsCompare) {
       /* Исключаем пароль из результата */

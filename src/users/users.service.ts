@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -25,33 +25,24 @@ export class UsersService {
   }
 
   async findOne(id: number): Promise<User> {
-    //console.log('id in find one', id);
     return this.userRepository.findOneBy({ id });
-  } //TODO не возвращать пароль в виде хэша
+  }
   
 
-  async findByUserName(username: string): Promise<User> {
-    //console.log('Username', username);
-    const user = await this.userRepository.findOneBy({username});
-    //console.log('user info', user);
-    /*if (!user) {
-      return new NotFoundException();
-    }*/
+  async findByUserName(username: string):Promise<User> {
+    const user = await this.userRepository.findOneBy({username}); 
     return user;
   } 
   
   async findMany({ query }: FindUserDto): Promise<User[]> {
-    //console.log('', { query });
     const users = await this.userRepository.find({where: [{email: query}, {username: query}]})
     return users;
   }
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    //console.log('id in update service', id);
-    //console.log('data in update service', updateUserDto);
     await this.userRepository.update(id, updateUserDto);
     return this.findOne(id);
   }
- //public
+ // public
   async updateUserData(id: number, updateUserDto: UpdateUserDto) {
     
     const { password } = updateUserDto;    
@@ -67,7 +58,6 @@ export class UsersService {
       select: ['wishes'],
       relations: ['wishes']
     })
-    //console.log('Wishes in userwishes', user.wishes);
     return user.wishes;
   }
 

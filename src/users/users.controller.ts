@@ -16,6 +16,7 @@ import { JwtGuard } from 'src/auth/jwt.guard';
 import { User } from './entities/user.entity';
 import { FindUserDto } from './dto/find-user.dto';
 
+@UseGuards(JwtGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -33,7 +34,6 @@ export class UsersController {
  }
 
  // Get Current User
- @UseGuards(JwtGuard)
  @Get('me')
  findCurrentUser(@Req() req):Promise<User> {
 	  // console.log('req.user', req.user); 
@@ -41,39 +41,30 @@ export class UsersController {
  }
 
  // Update User Info
- @UseGuards(JwtGuard)
  @Patch('me')
  async update(@Req() req, @Body() updateUserDto: UpdateUserDto): Promise<User> {
-    //console.log('ID in update controller', req.user.id);
-    //console.log('DATA in update controller', updateUserDto);
-    const updatedUser= await this.usersService.updateUserData(req.user.id, updateUserDto);
+    await this.usersService.updateUserData(req.user.id, updateUserDto);
     return this.usersService.findOne(req.user.id);
   }
 
-  @UseGuards(JwtGuard)
   @Get('me/wishes')
   async getCurrentUserWishes(@Req() req) {
     const user = await this.usersService.findOne(req.user.id);
-    //console.log('user in MeWishes', user);
     const userWishes = await this.usersService.getUserWishes(user.username);
-    //console.log('userWishes in MeWishes', userWishes);
     return userWishes;
   }
 
   // Find user by Username
-  @UseGuards(JwtGuard)
   @Get(':username')
   findOne(@Param('username') username: string) {
     return this.usersService.findByUserName(username);
   }
 
-  @UseGuards(JwtGuard)
   @Get(':username/wishes')
   getUsersWishes(@Param('username') username: string) {
     return this.usersService.getUserWishes(username);
   }
   
-  @UseGuards(JwtGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);

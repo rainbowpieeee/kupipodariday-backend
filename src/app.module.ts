@@ -10,29 +10,33 @@ import { Wish } from './wishes/entities/wish.entity';
 import { Wishlist } from './wishlists/entities/wishlist.entity';
 import { Offer } from './offers/entities/offer.entity';
 import { AuthModule } from './auth/auth.module';
-import { ConfigModule } from '@nestjs/config';
-import configuration from './config/config';
 import { EmailModule } from './email-sender/email-sender.module';
 
-import dotenv = require('dotenv');
+// import dotenv = require('dotenv');
 import { AppService } from './app.service';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 
-dotenv.config();
+import config from './config/config';
+import { ConfigModule } from '@nestjs/config';
+
+//dotenv.config();
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5433,
-      username: 'student',
-      password: '152637',
-      database: 'kupipodariday',
+      host: config().db.host,
+      port: config().db.port,
+      username: config().db.username,
+      password:config().db.password,
+      database: config().db.database,
       entities: [User, Wish, Wishlist, Offer],
       synchronize: true,
     }),
+	ConfigModule.forRoot({
+		load: [config]
+	  }),
 	WinstonModule.forRoot({
 		levels: {
 		  critical_error: 0,
@@ -51,6 +55,7 @@ dotenv.config();
     WishlistsModule,
     OffersModule,
 	AuthModule,
+    EmailModule
   ],
   controllers: [AppController],
   providers: [AppService],

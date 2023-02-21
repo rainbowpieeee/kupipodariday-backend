@@ -1,5 +1,6 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { EmailSenderService } from 'src/email-sender/email-sender.service';
 import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
 import { WishesService } from 'src/wishes/wishes.service';
@@ -10,17 +11,16 @@ import { Offer } from './entities/offer.entity';
 @Injectable()
 export class OffersService {
   constructor(
-    private readonly userService: UsersService,
-    private readonly wishesService: WishesService,
     @InjectRepository(Offer)
-    public offersRepository: Repository<Offer>,
+    private readonly offersRepository: Repository<Offer>,
+    private readonly userService: UsersService,
+    private readonly wishesService: WishesService, 
+    private readonly emailService: EmailSenderService
   ) {}
 
   async createOne(createOfferDto: CreateOfferDto, user: User) {
-    const currentUser = await this.userService.findOne(user.id);
-    //console.log('currentUser', currentUser);    
+    const currentUser = await this.userService.findOne(user.id);   
     const wish = await this.wishesService.findOne(createOfferDto.itemId);
-    //console.log('wish', wish);
 
     if (currentUser.id === wish.owner.id) {
       throw new BadRequestException('Нельзя вносить деньги на собственные подарки');
@@ -29,19 +29,16 @@ export class OffersService {
       throw new BadRequestException('Сумма собранных средств не может превышать стоимость подарка. Предложите сумму меньше');
     }
 
-    const updatedWish = await this.wishesService.update(wish.id, { raised: wish.raised + createOfferDto.amount})
-    //console.log('updated wish', updatedWish);
+    await this.wishesService.update(wish.id, { raised: wish.raised + createOfferDto.amount})
 
-    const offer = this.offersRepository.create({...createOfferDto, user, item: wish});
-    //console.log('offer', offer);
-
+    const offer = this.offersRepository.create({...createOfferDto, user, item: wish});   
     const savedOffer = await this.offersRepository.save(offer);
+    const updatedWish = await this.wishesService.findOne(createOfferDto.itemId);
 
-    //TODO email sender
     if (updatedWish.raised === updatedWish.price) {
-      console.log('Send emails')
+      const emails = updatedWish.offers.map((offer) => offer.user.email);
+      await this.emailService.sendEmail(emails, updatedWish);
     }
-
     return savedOffer;
   }
 

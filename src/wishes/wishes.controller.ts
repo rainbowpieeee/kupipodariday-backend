@@ -37,10 +37,10 @@ export class WishesController {
     const lastWishes = await this.wishesService.findLastWishes();
     return lastWishes;
   }
-//find the most popular wishes (20)
+// find the most popular wishes (20)
   @Get('top')
   async findTopWish() {
-    const topWishes = await this.wishesService.findLastWishes();
+    const topWishes = await this.wishesService.findTopWishes();
     return topWishes;
   }
 
@@ -49,7 +49,7 @@ export class WishesController {
   findOne(@Param('id') id: string) {
     return this.wishesService.findOne(+id);
   }
-//TODO 400 возвращает
+
   @UseGuards(JwtGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateWishDto: UpdateWishDto) {
@@ -57,14 +57,15 @@ export class WishesController {
   }
 
   @UseGuards(JwtGuard)
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.wishesService.remove(+id);
-  }
-
-  @UseGuards(JwtGuard)
   @Post(':id/copy')
   copyLikedWish(@Req() req, @Param('id') id: string) {
     return this.wishesService.copyLikedWish(+id, req.user.id);
+  }
+
+  // delete wish
+  @UseGuards(JwtGuard)
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.wishesService.remove(+id);
   }
 }
