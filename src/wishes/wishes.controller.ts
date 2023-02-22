@@ -8,6 +8,7 @@ import {
 	Delete,
 	Req,
 	UseGuards,
+	BadRequestException,
   } from '@nestjs/common';
 import { WishesService } from './wishes.service';
 import { CreateWishDto } from './dto/create-wish.dto';
@@ -47,25 +48,37 @@ export class WishesController {
   @UseGuards(JwtGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.wishesService.findOne(+id);
-  }
-
-  @UseGuards(JwtGuard)
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateWishDto: UpdateWishDto) {
-    return this.wishesService.update(+id, updateWishDto);
-  }
-
-  @UseGuards(JwtGuard)
-  @Post(':id/copy')
-  copyLikedWish(@Req() req, @Param('id') id: string) {
-    return this.wishesService.copyLikedWish(+id, req.user.id);
-  }
-
-  // delete wish
-  @UseGuards(JwtGuard)
-  @Delete(':id')
-  remove(@Param('id') id: string) {
+    if (isNaN(+id)) {
+		return new BadRequestException('Переданный id не явялется числом');
+	  }    
+	  return this.wishesService.findOne(+id);
+	}
+  
+	@UseGuards(JwtGuard)
+	@Patch(':id')
+	updateOne(@Param('id') id: string, @Req() req, @Body() updateWishDto: UpdateWishDto) {
+	  if (isNaN(+id)) {
+		return new BadRequestException('Переданный id не явялется числом');
+	  }
+	  return this.wishesService.updateOne(+id, req.user.id, updateWishDto);
+	}
+  
+	@UseGuards(JwtGuard)
+	@Post(':id/copy')
+	copyLikedWish(@Req() req, @Param('id') id: string) {
+	  if (isNaN(+id)) {
+		return new BadRequestException('Переданный id не явялется числом');
+	  }
+	  return this.wishesService.copyLikedWish(+id, req.user.id);
+	}
+  
+	// delete wish
+	@UseGuards(JwtGuard)
+	@Delete(':id')
+	remove(@Param('id') id: string) {
+	  if (isNaN(+id)) {
+		return new BadRequestException('Переданный id не явялется числом');
+	  }
     return this.wishesService.remove(+id);
   }
 }

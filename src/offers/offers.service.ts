@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EmailSenderService } from 'src/email-sender/email-sender.service';
+import { PublicUserDto } from 'src/users/dto/public-user.dto';
 import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
 import { WishesService } from 'src/wishes/wishes.service';
@@ -42,12 +43,26 @@ export class OffersService {
     return savedOffer;
   }
 
-  async findAll(): Promise<Offer[]> {
-    return this.offersRepository.find({relations: ['item', 'user']})
+  async findAll(): Promise<any[]> {
+    const offers = await this.offersRepository.find({relations: ['item', 'user']});
+
+    if (!offers) {
+      throw new NotFoundException();
+    }
+
+    const offersPublic = offers.map((offer) => {return {...offer, user: PublicUserDto.getFromUser(offer.user)}});
+
+    return  offersPublic;
   }
 
-  async findOne(id: number): Promise<Offer> {
-    return this.offersRepository.findOne({ where: { id }, relations: ['item', 'user']});
+  async findOne(id: number): Promise<any> {
+    const offer = await this.offersRepository.findOne({ where: { id }, relations: ['item', 'user']});
+
+    if (!offer) {
+      throw new NotFoundException();
+    }
+
+    return {...offer, user: PublicUserDto.getFromUser(offer.user)}
   }
 
   async update(id: number, updateOfferDto: UpdateOfferDto): Promise<any> {

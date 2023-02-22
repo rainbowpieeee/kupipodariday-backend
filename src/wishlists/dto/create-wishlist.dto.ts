@@ -7,11 +7,6 @@ export class CreateWishlistDto {
   @Length(1, 250)
   name: string;
 
-  // description — описание подборки, строка до 1500 символов;
-  @Length(0, 1500)
-  @IsOptional()
-  description: string;
-
   // image — обложка для подборки
   @IsString()
   @IsUrl()
@@ -22,5 +17,5 @@ export class CreateWishlistDto {
   @IsOptional()
   @IsArray()
   @IsNumber({}, { each: true })
-  itemId: number[];
+  itemsId: number[];
 }
