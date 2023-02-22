@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Req, UseGuards, BadRequestException } from '@nestjs/common';
 import { OffersService } from './offers.service';
 import { CreateOfferDto } from './dto/create-offer.dto';
 import { JwtGuard } from 'src/auth/jwt.guard';
@@ -20,6 +20,9 @@ export class OffersController {
   
   @Get(':id')
   findOne(@Param('id') id: string) {
+	if (isNaN(+id)) {
+		return new BadRequestException('Переданный id не явялется числом');
+	  }
     return this.offersService.findOne(+id);
   }
 }

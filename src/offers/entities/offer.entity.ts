@@ -22,11 +22,11 @@ export class Offer {
   updatedAt: Date;
 
   //user содержит id желающего скинуться;
-  @ManyToOne(() => User, (user) => user.id)
+  @ManyToOne(() => User, (user) => user.offers)
   user: User;
 
   //item содержит ссылку на товар;
-  @ManyToOne(() => Wish, (wish) => wish.id)
+  @ManyToOne(() => Wish, (wish) => wish.offers)
   item: Wish;
 
   //amount — сумма заявки, округляется до двух знаков после запятой;

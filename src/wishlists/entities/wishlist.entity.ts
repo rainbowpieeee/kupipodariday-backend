@@ -1,4 +1,4 @@
-import { IsUrl, Length } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsUrl, Length } from 'class-validator';
 import { User } from 'src/users/entities/user.entity';
 import { Wish } from 'src/wishes/entities/wish.entity';
 
@@ -37,12 +37,14 @@ export class Wishlist {
   description: string;
 
   //image — обложка для подборки;
-  @Column()
+  @Column({ default: 'https://i.pravatar.cc/' })
   @IsUrl()
+  @IsOptional()
   image: string;
 
   //owner - привязка к владельцу
-  @ManyToOne(() => User, (user) => user.id)
+  @ManyToOne(() => User, (user) => user.wishlists)
+  @IsNotEmpty()
   owner: User;
 
   //items -  желания

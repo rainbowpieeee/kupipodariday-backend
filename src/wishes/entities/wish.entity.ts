@@ -48,7 +48,7 @@ export class Wish {
   raised: number;
 
   // owner — ссылка на пользователя, который добавил пожелание подарка.
-  @ManyToOne(() => User, (user) => user.id)
+  @ManyToOne(() => User, (user) => user.wishes)
   owner: User;
 
   // description — строка с описанием подарка длиной от 1 и до 1024 символов.

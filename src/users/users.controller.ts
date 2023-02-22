@@ -8,6 +8,8 @@ import {
 	Delete,
 	UseGuards,
   	Req,
+	HttpCode,
+  	BadRequestException,
   } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -15,6 +17,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtGuard } from 'src/auth/jwt.guard';
 import { User } from './entities/user.entity';
 import { FindUserDto } from './dto/find-user.dto';
+import { PublicUserDto } from './dto/public-user.dto';
 
 @UseGuards(JwtGuard)
 @Controller('users')
@@ -57,7 +60,7 @@ export class UsersController {
   // Find user by Username
   @Get(':username')
   findOne(@Param('username') username: string) {
-    return this.usersService.findByUserName(username);
+    return this.usersService.findByUserNamePublic(username);
   }
 
   @Get(':username/wishes')
@@ -67,11 +70,14 @@ export class UsersController {
   
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
+    if (isNaN(+id)) {
+		return new BadRequestException('Переданный id не явялется числом');
+	  }
   }
 // Find User by email or username, unguarded
   @Post('find')
-  async findMany(@Body() findUsersDto: FindUserDto): Promise<User[]> {
+  @HttpCode(200)
+  async findMany(@Body() findUsersDto: FindUserDto): Promise<PublicUserDto[]> {
     return this.usersService.findMany(findUsersDto);
   }
 }

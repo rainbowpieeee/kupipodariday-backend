@@ -61,7 +61,7 @@ export class User {
 
   // wishlists содержит список вишлистов, которые создал пользователь. Установите для него подходящий тип связи.
   @OneToMany(() => Wishlist, (wishlist) => wishlist.owner)
-  wishList: Wishlist[];
+  wishlists: Wishlist[];
 }
 
 /*
