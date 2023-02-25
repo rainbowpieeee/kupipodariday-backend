@@ -1,88 +1,148 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PublicUserDto } from 'src/users/dto/public-user.dto';
 import { User } from 'src/users/entities/user.entity';
-import { UsersService } from 'src/users/users.service';
 import { WishesService } from 'src/wishes/wishes.service';
-import { In, Repository } from 'typeorm';
-import { CreateWishlistDto } from './dto/create-wishlist.dto';
-import { UpdateWishlistDto } from './dto/update-wishlist.dto';
-import { Wishlist } from './entities/wishlist.entity';
+import { FindManyOptions, FindOneOptions, Repository } from 'typeorm';
+import { CreateWishListDto } from './dto/create-wishList.dto';
+import { UpdateWishListDto } from './dto/update-wishList.dto';
+import { WishList } from './entities/wishlist.entity';
 
 @Injectable()
 export class WishlistsService {
   constructor(
-    @InjectRepository(Wishlist)
-    private readonly wishListRepository: Repository<Wishlist>,
-    private readonly wishesService: WishesService,
-	private readonly userService: UsersService
+    @InjectRepository(WishList)
+    private wishListsRepository: Repository<WishList>,
+    private wishesService: WishesService,
   ) {}
 
-  async create(createWishlistDto: CreateWishlistDto, user: User): Promise<Wishlist> {    
-    const wishes = await this.wishesService.find({
-		where: { id: In(createWishlistDto.itemsId || [])},
-    });
-
-    const wishList = this.wishListRepository.create({
-      ...createWishlistDto,
-      owner: PublicUserDto.getFromUser(user),
-      items: wishes            
-    });
-
-    return this.wishListRepository.save(wishList);
+  findMany(query: FindManyOptions<WishList>) {
+    return this.wishListsRepository.find(query);
   }
 
-  findAll(): Promise<Wishlist[]> {
-    return this.wishListRepository.find({relations: 
-      ['items', 'owner']
+  async findOne(query: FindOneOptions<WishList>): Promise<WishList> {
+    return this.wishListsRepository.findOne(query);
+  }
+
+  async getWishlists() {
+    const wishLists = await this.findMany({
+      relations: {
+        owner: true,
+        items: true,
+      },
     });
+
+    wishLists.forEach((wishList) => {
+      delete wishList.owner.password;
+      delete wishList.owner.email;
+    });
+
+    return wishLists;
   }
 
-  findOne(id: number): Promise<Wishlist> {
-    return this.wishListRepository.findOne({
-      where: { id },
-      relations: ['items', 'owner']
-    })
-  }
+  async getWishlistsById(id: string) {
+    const wishlist = await this.wishListsRepository.findOne({
+      where: [{ id: +id }],
+      relations: {
+        items: { offers: true },
+        owner: true,
+      },
+    });
 
-  async updateOne(idWishlist: number, userId: number, updateWishlistDto: UpdateWishlistDto) {
-    const updatingWishList = await this.findOne(idWishlist);
-
-    if (!updatingWishList) {
+    if (!wishlist) {
       throw new NotFoundException();
     }
 
-    const currentUser = await this.userService.findOne(userId);
-
-    if (updatingWishList.owner.id !== currentUser.id) {
-      throw new ForbiddenException('Можно редактировать только свой вишлист')    
-    }
-
-    const wishes = await this.wishesService.find({
-      where: { id: In(updateWishlistDto.itemsId || [])},
+    wishlist.items.forEach((item) => {
+      const amounts = item.offers.map((offer) => Number(offer.amount));
+      item.raised = amounts.reduce(function (acc, val) {
+        return acc + val;
+      }, 0);
     });
 
-    const updatedWishlist = await {
-      ...updateWishlistDto,
-      id: idWishlist,
-      updatedAt: new Date(),      
-      items: wishes,
-    };
+    delete wishlist.owner.password;
+    delete wishlist.owner.email;
 
-    await delete updatedWishlist.itemsId;   
-
-    return this.wishListRepository.save(updatedWishlist);
+    return wishlist;
   }
 
-  async removeOne(wishListId: number): Promise<Wishlist> {
-    const wishListToDelete = await this.findOne(wishListId);
+  async create(owner: User, createWishListDto: CreateWishListDto) {
+    delete owner.password;
+    delete owner.email;
 
-    if (!wishListToDelete) {
+    const wishes = await this.wishesService.findMany({});
+
+    const items = createWishListDto.itemsId.map((item) => {
+      return wishes.find((wish) => wish.id === item);
+    });
+
+    const newWishList = this.wishListsRepository.create({
+      ...createWishListDto,
+      owner: owner,
+      items: items,
+    });
+
+    return this.wishListsRepository.save(newWishList);
+  }
+
+  async updateOne(
+    updateWishListDto: UpdateWishListDto,
+    id: string,
+    userId: number,
+  ) {
+    const wishList = await this.findOne({
+      where: { id: +id },
+      relations: {
+        owner: true,
+        items: true,
+      },
+    });
+
+    if (wishList.owner.id !== userId) {
+      throw new ForbiddenException('Нельзя редактировать чужие подборки');
+    }
+
+    await this.wishListsRepository.update(id, updateWishListDto);
+    const updatedWishList = await this.findOne({
+      where: { id: +id },
+      relations: {
+        owner: true,
+        items: true,
+      },
+    });
+
+    delete updatedWishList.owner.password;
+    delete updatedWishList.owner.email;
+    return updatedWishList;
+  }
+
+  removeById(id: number) {
+    return this.wishListsRepository.delete({ id });
+  }
+
+  async delete(id: number, userId: number) {
+    const wishList = await this.findOne({
+      where: { id: id },
+      relations: {
+        owner: true,
+        items: true,
+      },
+    });
+    if (!wishList) {
       throw new NotFoundException();
-    }    
+    }
 
-    await this.wishListRepository.delete(wishListId);
+    if (userId !== wishList.owner.id) {
+      throw new ForbiddenException('Нельзя удалять чужие подборки');
+    }
+    await this.removeById(id);
 
-    return wishListToDelete;
+    delete wishList.owner.password;
+    delete wishList.owner.email;
+
+    return wishList;
   }
 }

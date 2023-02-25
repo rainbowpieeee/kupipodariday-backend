@@ -1,23 +1,36 @@
-import { IsInt, IsNotEmpty, IsUrl, Length } from 'class-validator';
+import {
+  IsNumber,
+  IsPositive,
+  IsString,
+  IsUrl,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class CreateWishDto {
-  @Length(1, 250)
-  @IsNotEmpty()
+  @IsString()
+  @MinLength(1, {
+    message: 'Название подарка не может быть короче 1-ого символа',
+  })
+  @MaxLength(250, {
+    message: 'Название подарка не может быть длиннее 250 символов',
+  })
   name: string;
 
+  @IsString()
   @IsUrl()
-  @IsNotEmpty()
   link: string;
 
+  @IsString()
   @IsUrl()
-  @IsNotEmpty()
   image: string;
 
-  @IsInt()
-  @IsNotEmpty()
+  @Min(1)
+  @IsNumber()
+  @IsPositive()
   price: number;
 
-  @Length(1, 1240)
+  @IsString()
   description: string;
-
 }

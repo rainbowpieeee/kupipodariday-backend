@@ -1,77 +1,158 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException } from '@nestjs/common/exceptions';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EmailSenderService } from 'src/email-sender/email-sender.service';
-import { PublicUserDto } from 'src/users/dto/public-user.dto';
 import { User } from 'src/users/entities/user.entity';
-import { UsersService } from 'src/users/users.service';
 import { WishesService } from 'src/wishes/wishes.service';
-import { Repository } from 'typeorm';
+import { FindManyOptions, FindOneOptions, Repository } from 'typeorm';
 import { CreateOfferDto } from './dto/create-offer.dto';
-import { UpdateOfferDto } from './dto/update-offer.dto';
 import { Offer } from './entities/offer.entity';
+
 @Injectable()
 export class OffersService {
   constructor(
     @InjectRepository(Offer)
-    private readonly offersRepository: Repository<Offer>,
-    private readonly userService: UsersService,
-    private readonly wishesService: WishesService, 
-    private readonly emailService: EmailSenderService
+    private offersRepository: Repository<Offer>,
+    private wishesService: WishesService,
   ) {}
 
-  async createOne(createOfferDto: CreateOfferDto, user: User) {
-    const currentUser = await this.userService.findOne(user.id);   
-    const wish = await this.wishesService.findOne(createOfferDto.itemId);
+  async create(user: User, createOfferDto: CreateOfferDto): Promise<Offer> {
+    const wish = await this.wishesService.findOne({
+      where: { id: createOfferDto.itemId },
+      relations: {
+        offers: true,
+        owner: true,
+      },
+    });
 
-    if (currentUser.id === wish.owner.id) {
-      throw new BadRequestException('Нельзя вносить деньги на собственные подарки');
-    } else
-    if ( wish.raised + createOfferDto.amount > wish.price) {
-      throw new BadRequestException('Сумма собранных средств не может превышать стоимость подарка. Предложите сумму меньше');
+    const sum = await this.sumOfMoney(wish.id);
+
+    wish.raised = sum;
+
+    if (
+      wish.raised > wish.price ||
+      wish.raised + createOfferDto.amount > wish.price
+    ) {
+      throw new ForbiddenException('Сумма взноса превышает стоиомость подарка');
     }
 
-    await this.wishesService.update(wish.id, { raised: wish.raised + createOfferDto.amount})
-
-    const offer = this.offersRepository.create({...createOfferDto, user, item: wish});   
-    const savedOffer = await this.offersRepository.save(offer);
-    const updatedWish = await this.wishesService.findOne(createOfferDto.itemId);
-
-    if (updatedWish.raised === updatedWish.price) {
-      const emails = updatedWish.offers.map((offer) => offer.user.email);
-      await this.emailService.sendEmail(emails, updatedWish);
+    if (wish.owner.id === user.id) {
+      throw new ForbiddenException(
+        'Внести деньги на собственный подарок невозможно',
+      );
     }
-    return savedOffer;
+
+    const newOffer = this.offersRepository.create({
+      ...createOfferDto,
+      user: user,
+      item: wish,
+    });
+
+    if (newOffer.hidden === false) {
+      delete newOffer.user;
+      return this.offersRepository.save(newOffer);
+    }
+
+    delete newOffer.user.password;
+    delete newOffer.user.email;
+    delete newOffer.item.owner.password;
+    delete newOffer.item.owner.email;
+
+    return this.offersRepository.save(newOffer);
   }
 
-  async findAll(): Promise<any[]> {
-    const offers = await this.offersRepository.find({relations: ['item', 'user']});
-
-    if (!offers) {
-      throw new NotFoundException();
-    }
-
-    const offersPublic = offers.map((offer) => {return {...offer, user: PublicUserDto.getFromUser(offer.user)}});
-
-    return  offersPublic;
+  async findOne(query: FindOneOptions<Offer>): Promise<Offer> {
+    return this.offersRepository.findOne(query);
   }
 
-  async findOne(id: number): Promise<any> {
-    const offer = await this.offersRepository.findOne({ where: { id }, relations: ['item', 'user']});
+  findMany(query: FindManyOptions<Offer>) {
+    return this.offersRepository.find(query);
+  }
 
+  async getOffers() {
+    const offersArr = await this.findMany({
+      relations: {
+        item: { offers: true, owner: true },
+        user: {
+          offers: { item: true },
+          wishes: { offers: true, owner: true },
+          wishlists: true,
+        },
+      },
+    });
+
+    offersArr.forEach((offer) => {
+      offer.amount = Number(offer.amount);
+      offer.item.price = Number(offer.item.price);
+      delete offer.item.owner.password;
+      delete offer.item.owner.email;
+      offer.user?.wishes.forEach((wish) => (wish.price = Number(wish.price)));
+    });
+
+    return offersArr;
+  }
+
+  async getOfferById(id: string) {
+    const offer = await this.offersRepository.findOne({
+      where: [{ id: +id }],
+      relations: {
+        item: { offers: true, owner: true },
+        user: { offers: true, wishes: true, wishlists: true },
+      },
+    });
     if (!offer) {
       throw new NotFoundException();
     }
 
-    return {...offer, user: PublicUserDto.getFromUser(offer.user)}
+    offer.amount = Number(offer.amount);
+    delete offer.item.owner.password;
+    delete offer.item.owner.email;
+    offer.item.price = Number(offer.item.price);
+
+    return offer;
   }
 
-  async update(id: number, updateOfferDto: UpdateOfferDto): Promise<any> {
-    return this.offersRepository.update(id, updateOfferDto);
+  async updateOne(updateWishDto: Offer, id: string, userId: number) {
+    const offer = await this.offersRepository.findOne({
+      where: [{ id: +id }],
+      relations: {
+        user: true,
+      },
+    });
+
+    if (offer.user.id === userId) {
+      return;
+    }
+    return this.offersRepository.update(id, updateWishDto);
   }
 
-  async remove(id: number) {
-    const deletedOffer = await this.findOne(id);
-    await this.offersRepository.delete(id);
-    return deletedOffer;
+  async removeOne(id: number, userId: number) {
+    const offer = await this.offersRepository.findOne({
+      where: [{ id: +id }],
+      relations: {
+        user: true,
+      },
+    });
+
+    if (offer.user.id === userId) {
+      return;
+    }
+
+    return this.offersRepository.delete({ id });
+  }
+
+  async sumOfMoney(wishId: number) {
+    const wish = await this.wishesService.findOne({
+      where: { id: wishId },
+      relations: {
+        offers: true,
+      },
+    });
+
+    const offerAmountsArr = wish.offers.map((offer) => Number(offer.amount));
+    const sum = offerAmountsArr.reduce(function (acc, val) {
+      return acc + val;
+    }, 0);
+
+    return sum;
   }
 }

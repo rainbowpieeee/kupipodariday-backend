@@ -1,22 +1,19 @@
-import { IsNotEmpty, IsOptional, IsUrl, Length } from 'class-validator';
+import { Length } from 'class-validator';
 import { User } from 'src/users/entities/user.entity';
 import { Wish } from 'src/wishes/entities/wish.entity';
-
 import {
-  Column,
-  CreateDateColumn,
   Entity,
-  JoinTable,
-  ManyToMany,
-  ManyToOne,
   PrimaryGeneratedColumn,
+  CreateDateColumn,
   UpdateDateColumn,
+  Column,
+  ManyToOne,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 
-// @Entity() — декоратор обозначает, что мы описываем модель и на основании этой модели нужно создать таблицу
-
 @Entity()
-export class Wishlist {
+export class WishList {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -26,29 +23,19 @@ export class Wishlist {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  //name — название списка. Не может быть длиннее 250 символов и короче одного;
-  @Column()
+  @Column({
+    type: 'varchar',
+  })
   @Length(1, 250)
   name: string;
 
-  //description — описание подборки, строка до 1500 символов;
-  @Column({ nullable: true })
-  @Length(1, 1500)
-  description: string;
-
-  //image — обложка для подборки;
-  @Column({ default: 'https://i.pravatar.cc/' })
-  @IsUrl()
-  @IsOptional()
+  @Column()
   image: string;
 
-  //owner - привязка к владельцу
   @ManyToOne(() => User, (user) => user.wishlists)
-  @IsNotEmpty()
   owner: User;
 
-  //items -  желания
   @ManyToMany(() => Wish)
   @JoinTable()
-  items: Wish[]
+  items: Wish[];
 }

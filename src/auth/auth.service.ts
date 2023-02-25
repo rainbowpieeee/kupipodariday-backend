@@ -1,38 +1,33 @@
-import * as bcrypt from 'bcrypt';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { HashService } from 'src/hash/hash.service';
 import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private userService: UsersService,
-	private jwtService: JwtService
+    private jwtService: JwtService,
+    private usersService: UsersService,
+    private hashService: HashService,
   ) {}
 
-  auth(user: User): { access_token: string} {
-    // тут будем генерировать токен
+  auth(user: User) {
     const payload = { sub: user.id };
     return { access_token: this.jwtService.sign(payload) };
   }
 
-  async validatePassword(username: string, password: string) {    
-    const user = await this.userService.findByUserName(username);
+  async validatePassword(username: string, password: string) {
+    const userPassword = password;
+    const user = await this.usersService.findByUsername(username);
 
-    if (!user) {
-      throw new UnauthorizedException('Неверное имя пользователя или пароль')
-    }
-    const passwordIsCompare = await bcrypt.compare(password, user.password);    
+    if (user) {
+      const isValidHash = await this.hashService.verifyHash(
+        userPassword,
+        user.password,
+      );
 
-    if (!passwordIsCompare) {
-      throw new UnauthorizedException('Неверное имя пользователя или пароль')
-    }
-
-    if (user && passwordIsCompare) {
-      /* Исключаем пароль из результата */
-      const {password, ...result} = user;
-      return result;
+      return isValidHash ? user : null;
     }
     return null;
   }

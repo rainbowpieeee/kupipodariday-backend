@@ -6,74 +6,33 @@ import { WishesModule } from './wishes/wishes.module';
 import { WishlistsModule } from './wishlists/wishlists.module';
 import { OffersModule } from './offers/offers.module';
 import { User } from './users/entities/user.entity';
-import { Wish } from './wishes/entities/wish.entity';
-import { Wishlist } from './wishlists/entities/wishlist.entity';
 import { Offer } from './offers/entities/offer.entity';
+import { Wish } from './wishes/entities/wish.entity';
+import { WishList } from './wishlists/entities/wishlist.entity';
 import { AuthModule } from './auth/auth.module';
-import { EmailModule } from './email-sender/email-sender.module';
-
-// import dotenv = require('dotenv');
-import { AppService } from './app.service';
-import { WinstonModule } from 'nest-winston';
-import * as winston from 'winston';
-
-import config from './config/config';
 import { ConfigModule } from '@nestjs/config';
-
-//dotenv.config();
+import configuration from './configuration';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: config().db.host,
-      port: config().db.port,
-      username: config().db.username,
-      password:config().db.password,
-      database: config().db.database,
-      entities: [User, Wish, Wishlist, Offer],
+      host: 'localhost',
+      port: 5432,
+      username: 'student',
+      password: 'student',
+      database: 'kupipodariday',
+      entities: [User, Offer, Wish, WishList],
       synchronize: true,
     }),
-	ConfigModule.forRoot({
-		load: [config]
-	  }),
-	WinstonModule.forRoot({
-		levels: {
-		  critical_error: 0,
-		  error: 1,
-		  special_warning: 2,
-		  another_log_level: 3,
-		  info: 4,
-		},
-		transports: [
-		  new winston.transports.Console({ format: winston.format.simple() }),
-		  new winston.transports.File({ filename: 'error.log', level: 'error' }),
-		],
-	}),    
-	UsersModule,
+    UsersModule,
     WishesModule,
     WishlistsModule,
     OffersModule,
-	AuthModule,
-    EmailModule
+    AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [],
 })
 export class AppModule {}
-
-// означает, что при старте приложение будет подгонять базу в СУБД к той,
-// что описана в ORM.
-// Удобно для разработки, но точно не стоит использовать в продакшене,
-// поскольку может привести к неочевидным изменениям и конфликтам
-// при работе нескольких разработчиков.
-// Изменения продакшен-базы должны происходить явным образом — это мы разберём
-// в теме про миграции.
-/* entities — сущности, которые описывают нашу базу данных. Пока их нет, мы ничего не можем делать с базой, добавим их в следующем уроке.
-.*/
-
-/*
-    ConfigModule.forRoot({
-      load: [configuration]      
-    }),
-*/
