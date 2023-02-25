@@ -1,83 +1,72 @@
 import {
-	Controller,
-	Get,
-	Post,
-	Body,
-	Patch,
-	Param,
-	Delete,
-	UseGuards,
-  	Req,
-	HttpCode,
-  	BadRequestException,
-  } from '@nestjs/common';
-import { UsersService } from './users.service';
+  Body,
+  Controller,
+  Get,
+  Header,
+  NotFoundException,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { JwtGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RequestWithUser } from 'src/types/types';
 import { CreateUserDto } from './dto/create-user.dto';
+import { FindUsersDto } from './dto/find-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { JwtGuard } from 'src/auth/jwt.guard';
-import { User } from './entities/user.entity';
-import { FindUserDto } from './dto/find-user.dto';
-import { PublicUserDto } from './dto/public-user.dto';
+import { UsersService } from './users.service';
 
 @UseGuards(JwtGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private usersService: UsersService) {}
 
- // for signup
- @Post()
- create(@Body() createUserDto: CreateUserDto) {
-   return this.usersService.create(createUserDto);
- }
+  @Get('me')
+  getUser(@Req() req: RequestWithUser) {
+    return req.user;
+  }
 
-
- @Get()
- findAll() {
-   return this.usersService.findAll();
- }
-
- // Get Current User
- @Get('me')
- findCurrentUser(@Req() req):Promise<User> {
-	  // console.log('req.user', req.user); 
-	  return this.usersService.findOne(req.user.id);
- }
-
- // Update User Info
- @Patch('me')
- async update(@Req() req, @Body() updateUserDto: UpdateUserDto): Promise<User> {
-    await this.usersService.updateUserData(req.user.id, updateUserDto);
-    return this.usersService.findOne(req.user.id);
+  @Get(':username')
+  async getUserbyName(@Param('username') username: string) {
+    const user = await this.usersService.findByUsername(username);
+    if (!user) {
+      throw new NotFoundException();
+    }
+    delete user.password;
+    delete user.email;
+    return user;
   }
 
   @Get('me/wishes')
-  async getCurrentUserWishes(@Req() req) {
-    const user = await this.usersService.findOne(req.user.id);
-    const userWishes = await this.usersService.getUserWishes(user.username);
-    return userWishes;
-  }
-
-  // Find user by Username
-  @Get(':username')
-  findOne(@Param('username') username: string) {
-    return this.usersService.findByUserNamePublic(username);
+  @Header('Content-Type', 'application/json')
+  async getOwnWishes(@Req() req: RequestWithUser) {
+    return this.usersService.getUserWishes(req.user.id);
   }
 
   @Get(':username/wishes')
-  getUsersWishes(@Param('username') username: string) {
-    return this.usersService.getUserWishes(username);
+  @Header('Content-Type', 'application/json')
+  async getWishesByUsername(@Param('username') username: string) {
+    const user = await this.getUserbyName(username);
+    return this.usersService.getUserWishes(user.id);
   }
-  
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    if (isNaN(+id)) {
-		return new BadRequestException('Переданный id не явялется числом');
-	  }
-  }
-// Find User by email or username, unguarded
+
   @Post('find')
-  @HttpCode(200)
-  async findMany(@Body() findUsersDto: FindUserDto): Promise<PublicUserDto[]> {
-    return this.usersService.findMany(findUsersDto);
+  @Header('Content-Type', 'application/json')
+  async findUserByEmailOrUserName(@Body() findUserDto: FindUsersDto) {
+    return this.usersService.findUserByEmailOrUserName(findUserDto);
+  }
+
+  @Post()
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.create(createUserDto);
+  }
+
+  @Patch('me')
+  async updateUser(
+    @Body() updateUserDto: UpdateUserDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.usersService.updateOne(req.user.id, updateUserDto);
   }
 }

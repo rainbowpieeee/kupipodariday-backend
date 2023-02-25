@@ -1,28 +1,36 @@
-import { Controller, Get, Post, Body, Param, Req, UseGuards, BadRequestException } from '@nestjs/common';
-import { OffersService } from './offers.service';
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { JwtGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RequestWithUser } from 'src/types/types';
 import { CreateOfferDto } from './dto/create-offer.dto';
-import { JwtGuard } from 'src/auth/jwt.guard';
+import { OffersService } from './offers.service';
 
 @UseGuards(JwtGuard)
 @Controller('offers')
 export class OffersController {
-  constructor(private readonly offersService: OffersService) {}
+  constructor(private offersService: OffersService) {}
 
   @Post()
-  create(@Body() createOfferDto: CreateOfferDto, @Req() req: any) {
-    return this.offersService.createOne(createOfferDto, req.user);
+  @Header('Content-Type', 'application/json')
+  create(@Body() createOfferDto: CreateOfferDto, @Req() req: RequestWithUser) {
+    return this.offersService.create(req.user, createOfferDto);
   }
 
   @Get()
-  findAll() {
-    return this.offersService.findAll();
+  getOffers() {
+    return this.offersService.getOffers();
   }
-  
+
   @Get(':id')
-  findOne(@Param('id') id: string) {
-	if (isNaN(+id)) {
-		return new BadRequestException('Переданный id не явялется числом');
-	  }
-    return this.offersService.findOne(+id);
+  async getOfferById(@Param('id') id: string) {
+    return this.offersService.getOfferById(id);
   }
 }

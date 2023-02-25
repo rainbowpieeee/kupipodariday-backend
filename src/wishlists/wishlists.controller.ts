@@ -1,51 +1,61 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, BadRequestException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { Delete, Header, Patch } from '@nestjs/common/decorators';
+import { JwtGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RequestWithUser } from 'src/types/types';
+import { CreateWishListDto } from './dto/create-wishList.dto';
+import { UpdateWishListDto } from './dto/update-wishList.dto';
 import { WishlistsService } from './wishlists.service';
-import { CreateWishlistDto } from './dto/create-wishlist.dto';
-import { UpdateWishlistDto } from './dto/update-wishlist.dto';
-import { JwtGuard } from 'src/auth/jwt.guard';
 
-//only for registered users
-@UseGuards(JwtGuard)
 @Controller('wishlistlists')
 export class WishlistsController {
-  constructor(private readonly wishlistsService: WishlistsService) {}
+  constructor(private wishlistsService: WishlistsService) {}
 
-// create new wishlist
-  @Post()
-  create(@Req() req, @Body() createWishlistDto: CreateWishlistDto) {
-    return this.wishlistsService.create(createWishlistDto, req.user);
-  }
-
-  //find all owner wishlists
   @Get()
-  findAll() {
-    return this.wishlistsService.findAll();
+  getWishlists() {
+    return this.wishlistsService.getWishlists();
   }
 
-// get wishList by Id
+  @UseGuards(JwtGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-	if (isNaN(+id)) {
-		return new BadRequestException('Переданный id не явялется числом');
-	  }
-    return this.wishlistsService.findOne(+id);
+  getWishlistsById(@Param('id') id: string) {
+    return this.wishlistsService.getWishlistsById(id);
   }
 
-// update wishList
+  @UseGuards(JwtGuard)
+  @Post()
+  create(
+    @Body() createWishListDto: CreateWishListDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.wishlistsService.create(req.user, createWishListDto);
+  }
+
+  @UseGuards(JwtGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Req() req, @Body() updateWishlistDto: UpdateWishlistDto) {
-    if (isNaN(+id)) {
-      return new BadRequestException('Переданный id не явялется числом');
-    }
-    return this.wishlistsService.updateOne(+id, req.user.id, updateWishlistDto);
+  @Header('Content-Type', 'application/json')
+  async updateWishlistlists(
+    @Body() updateWishListDto: UpdateWishListDto,
+    @Param('id') id: string,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.wishlistsService.updateOne(updateWishListDto, id, req.user.id);
   }
 
-// delete wishList
+  @UseGuards(JwtGuard)
   @Delete(':id')
-  removeOne(@Param('id') id: string) {
-	if (isNaN(+id)) {
-		return new BadRequestException('Переданный id не явялется числом');
-	  }
-    return this.wishlistsService.removeOne(+id);
+  async delete(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.wishlistsService.delete(id, req.user.id);
   }
 }
