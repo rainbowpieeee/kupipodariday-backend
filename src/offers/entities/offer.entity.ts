@@ -1,13 +1,14 @@
-import { User } from 'src/users/entities/user.entity';
-import { Wish } from 'src/wishes/entities/wish.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
+  Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Column,
   ManyToOne,
 } from 'typeorm';
+import { IsPositive, IsBoolean } from 'class-validator';
+import { User } from './../../users/entities/user.entity';
+import { Wish } from './../../wishes/entities/wish.entity';
 
 @Entity()
 export class Offer {
@@ -23,17 +24,16 @@ export class Offer {
   @ManyToOne(() => User, (user) => user.offers)
   user: User;
 
-  @ManyToOne(() => Wish, (wish) => wish.offers)
+  @ManyToOne(() => Wish, (wish) => wish.offers, { onDelete: 'CASCADE' })
   item: Wish;
 
-  @Column({
-    type: 'numeric',
-    scale: 2,
-  })
+  @Column()
+  @IsPositive()
   amount: number;
 
   @Column({
     default: false,
   })
+  @IsBoolean()
   hidden: boolean;
 }
