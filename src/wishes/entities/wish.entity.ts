@@ -1,15 +1,23 @@
-import { IsUrl, Length } from 'class-validator';
-import { Offer } from 'src/offers/entities/offer.entity';
-import { User } from 'src/users/entities/user.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
+  Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Column,
-  ManyToOne,
   OneToMany,
+  ManyToOne,
 } from 'typeorm';
+import {
+  IsInt,
+  Length,
+  IsDefined,
+  IsUrl,
+  IsPositive,
+  IsNumber,
+  IsString,
+} from 'class-validator';
+import { User } from './../../users/entities/user.entity';
+import { Offer } from './../../offers/entities/offer.entity';
 
 @Entity()
 export class Wish {
@@ -22,10 +30,9 @@ export class Wish {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({
-    type: 'varchar',
-  })
+  @Column()
   @Length(1, 250)
+  @IsDefined()
   name: string;
 
   @Column()
@@ -35,33 +42,32 @@ export class Wish {
   @IsUrl()
   image: string;
 
-  @Column({
-    type: 'numeric',
-    scale: 2,
-  })
+  @Column()
+  @IsPositive()
+  @IsNumber()
   price: number;
 
   @Column({
-    scale: 2,
     default: 0,
   })
+  @IsNumber()
   raised: number;
-
-  @Column({
-    scale: 0,
-    default: 0,
-  })
-  copied: number;
 
   @ManyToOne(() => User, (user) => user.wishes)
   owner: User;
 
-  @Column({
-    type: 'varchar',
-  })
+  @Column()
+  @IsString()
   @Length(1, 1024)
   description: string;
 
   @OneToMany(() => Offer, (offer) => offer.item)
   offers: Offer[];
+
+  @Column({
+    default: 0,
+  })
+  @IsInt()
+  @IsPositive()
+  copied: number;
 }

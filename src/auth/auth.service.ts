@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { User } from '../users/entities/user.entity';
 import { JwtService } from '@nestjs/jwt';
-import { HashService } from 'src/hash/hash.service';
-import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
+import { HashService } from 'src/hash/hash.service';
 
 @Injectable()
 export class AuthService {
@@ -14,21 +14,24 @@ export class AuthService {
 
   auth(user: User) {
     const payload = { sub: user.id };
+    console.log(payload);
     return { access_token: this.jwtService.sign(payload) };
   }
 
   async validatePassword(username: string, password: string) {
-    const userPassword = password;
-    const user = await this.usersService.findByUsername(username);
+    const user = await this.usersService.findOneByUsername(username);
 
-    if (user) {
-      const isValidHash = await this.hashService.verifyHash(
-        userPassword,
-        user.password,
-      );
+    const validationResult = await this.hashService.compare(
+      password,
+      user.password,
+    );
 
-      return isValidHash ? user : null;
+    if (validationResult) {
+      const { password, ...userWithoutPassword } = user;
+
+      return userWithoutPassword;
     }
+
     return null;
   }
 }
