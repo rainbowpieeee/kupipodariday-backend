@@ -9,6 +9,7 @@ import {
   UseGuards,
   Req,
   UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
 import { WishlistsService } from './wishlists.service';
 import { CreateWishlistDto } from './dto/create-wishlist.dto';
@@ -46,11 +47,17 @@ export class WishlistsController {
   @Patch(':id')
   @UseInterceptors(RemoveUserInfoFromWishlistInterceptor)
   async update(
-    @Param('id') id: string,
-    @Body() updateWishlistDto: UpdateWishlistDto,
-    @Req() { user }: { user: User },
-  ) {
-    return await this.wishlistsService.update(+id, updateWishlistDto, user);
+	  @Param('id') id: string, 
+	  @Req() req, 
+	  @Body() updateWishlistDto: UpdateWishlistDto) 
+	  { 
+
+    if (isNaN(+id)) { 
+      return new BadRequestException('Переданный id не явялется числом'); 
+    } 
+
+    return this.wishlistsService.update(+id, updateWishlistDto, req.user.id); 
+
   }
 
   @Delete(':id')
