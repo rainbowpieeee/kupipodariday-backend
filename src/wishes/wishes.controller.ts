@@ -8,49 +8,36 @@ import {
   Delete,
   UseGuards,
   Req,
-  UseInterceptors,
 } from '@nestjs/common';
 import { WishesService } from './wishes.service';
 import { CreateWishDto } from './dto/create-wish.dto';
 import { UpdateWishDto } from './dto/update-wish.dto';
 import { JwtGuard } from 'src/auth/guards/jwtAuth.guard';
-import { User } from 'src/users/entities/user.entity';
-import { RemoveUserInfoFromWishInterceptor } from './interceptors/removeUserInfoFromWish.interceptor';
 
 @Controller('wishes')
 export class WishesController {
   constructor(private readonly wishesService: WishesService) {}
 
+  @UseGuards(JwtGuard)
+  @Post()
+  create(@Body() wish: CreateWishDto, @Req() req) {
+    return this.wishesService.create(wish, req.user.id);
+  }
+
   @Get('last')
-  async getLastWishes() {
-    return await this.wishesService.getLastWishes();
+  findLast() {
+    return this.wishesService.findLast();
   }
 
   @Get('top')
-  async getTopWishes() {
-    return await this.wishesService.getTopWishes();
+  findById() {
+    return this.wishesService.findTop();
   }
 
   @UseGuards(JwtGuard)
-  @Post()
-  async create(
-    @Body() createWishDto: CreateWishDto,
-    @Req() { user }: { user: User },
-  ) {
-    return await this.wishesService.create(user, createWishDto);
-  }
-
-  @UseGuards(JwtGuard)
-  @Get()
-  findAll() {
-    return this.wishesService.findAll();
-  }
-
-  @UseGuards(JwtGuard)
-  @UseInterceptors(RemoveUserInfoFromWishInterceptor)
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.wishesService.findOne(+id);
+  findOne(@Param('id') id: number) {
+    return this.wishesService.findOne(id);
   }
 
   @UseGuards(JwtGuard)
@@ -58,21 +45,21 @@ export class WishesController {
   async update(
     @Param('id') id: string,
     @Body() updateWishDto: UpdateWishDto,
-    @Req() { user }: { user: User },
+    @Req() req,
   ) {
-    return await this.wishesService.update(+id, updateWishDto, user);
+    await this.wishesService.update(+id, updateWishDto, req.user.id);
+    return updateWishDto;
   }
 
   @UseGuards(JwtGuard)
-  @UseInterceptors(RemoveUserInfoFromWishInterceptor)
   @Delete(':id')
-  async remove(@Param('id') id: string, @Req() { user }: { user: User }) {
-    return await this.wishesService.remove(+id, user);
+  async remove(@Param('id') id: string, @Req() req) {
+    return await this.wishesService.remove(+id, req.user.id);
   }
 
   @UseGuards(JwtGuard)
   @Post(':id/copy')
-  async copyWish(@Req() { user }: { user: User }, @Param('id') id: string) {
-    return await this.wishesService.copyWish(+id, user);
+  async createCopy(@Param('id') wishId: string, @Req() req) {
+    return this.wishesService.createCopy(+wishId, req.user.id);
   }
 }

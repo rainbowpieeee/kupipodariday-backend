@@ -1,44 +1,40 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  ManyToMany,
-  ManyToOne,
-  JoinTable,
+import { IsUrl } from 'class-validator';
+import { BaseEntity } from 'src/general/baseEntity';
+import { User } from 'src/users/entities/user.entity';
+import { Wish } from 'src/wishes/entities/wish.entity';
+import { 
+  Entity, 
+  Column, 
+  ManyToOne, 
+  ManyToMany, 
+  JoinTable 
 } from 'typeorm';
-import { Length, IsDefined } from 'class-validator';
-import { Wish } from './../../wishes/entities/wish.entity';
-import { User } from './../../users/entities/user.entity';
 
 @Entity()
-export class Wishlist {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
-
-  @Column()
-  @IsDefined()
-  @Length(1, 250)
+export class Wishlist extends BaseEntity {
+  @Column({
+    type: 'varchar',
+    length: 250,
+  })
   name: string;
 
-  @Column({ default: '' })
-  @Length(1500)
+  @Column({
+    type: 'varchar',
+    length: 1500,
+    nullable: true,
+  })
   description: string;
 
-  @Column()
+  @Column({
+    type: 'varchar',
+  })
+  @IsUrl()
   image: string;
-
-  @ManyToOne(() => User, (user) => user.wishlists)
-  owner: User;
 
   @ManyToMany(() => Wish)
   @JoinTable()
   items: Wish[];
+
+  @ManyToOne(() => User, (user) => user.wishlists)
+  owner: User;
 }

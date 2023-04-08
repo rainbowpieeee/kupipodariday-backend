@@ -1,41 +1,35 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
-  CreateDateColumn,
-  UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
-import { Length, IsDefined, IsEmail } from 'class-validator';
+import { 
+  Length, 
+  IsEmail, 
+  IsString, 
+  IsNotEmpty, 
+  IsUrl } from 'class-validator';
+import { BaseEntity } from 'src/general/baseEntity';
 import { Wish } from './../../wishes/entities/wish.entity';
 import { Offer } from './../../offers/entities/offer.entity';
 import { Wishlist } from './../../wishlists/entities/wishlist.entity';
 
 @Entity()
-export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
-
+export class User extends BaseEntity {
   @Column({
     type: 'varchar',
-    length: 30,
     unique: true,
   })
   @Length(2, 30)
-  @IsDefined()
+  @IsString()
+  @IsNotEmpty()
   username: string;
 
   @Column({
     type: 'varchar',
-    length: 200,
     default: 'Пока ничего не рассказал о себе',
   })
+  @IsString()
   @Length(2, 200)
   about: string;
 
@@ -43,6 +37,8 @@ export class User {
     type: 'varchar',
     default: 'https://i.pravatar.cc/300',
   })
+  @IsString()
+  @IsUrl()
   avatar: string;
 
   @Column({
@@ -52,7 +48,11 @@ export class User {
   @IsEmail()
   email: string;
 
-  @Column()
+  @Column({
+    type: 'varchar',
+    select: false,
+  })
+  @IsString()
   password: string;
 
   @OneToMany(() => Wish, (wish) => wish.owner)

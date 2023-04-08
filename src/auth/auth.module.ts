@@ -8,7 +8,6 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { UsersModule } from 'src/users/users.module';
 import { HashModule } from 'src/hash/hash.module';
 import { AuthController } from './auth.controller';
-import { jwtConstants } from '../utils/constants';
 
 @Module({
   imports: [
@@ -18,11 +17,11 @@ import { jwtConstants } from '../utils/constants';
     HashModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async () => ({
-        secret: jwtConstants.secret,
-        signOptions: { expiresIn: '3600s' },
+      useFactory: async (configService: ConfigService) => ({
+		inject: [ConfigService],
+        secret: 'jwtSecret',
+        signOptions: { expiresIn: '1d' },
       }),
-      inject: [ConfigService],
     }),
   ],
   providers: [AuthService, JwtStrategy, LocalStrategy],

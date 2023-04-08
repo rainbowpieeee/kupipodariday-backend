@@ -1,68 +1,50 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  UseGuards,
+  Controller, 
+  Get, 
+  Post, 
+  Body, 
+  Patch, 
+  Param, 
+  Delete, 
+  UseGuards, 
   Req,
-  UseInterceptors,
-  BadRequestException,
 } from '@nestjs/common';
 import { WishlistsService } from './wishlists.service';
 import { CreateWishlistDto } from './dto/create-wishlist.dto';
 import { UpdateWishlistDto } from './dto/update-wishlist.dto';
 import { JwtGuard } from 'src/auth/guards/jwtAuth.guard';
-import { User } from 'src/users/entities/user.entity';
-import { RemoveUserInfoFromWishlistInterceptor } from './interceptors/removeUserInfoFromWishlist.interceptor';
-
+  
 @UseGuards(JwtGuard)
-@Controller('wishlists')
+@Controller('wishlistlists')
 export class WishlistsController {
   constructor(private readonly wishlistsService: WishlistsService) {}
+  
+@Post()
+create(@Body() wishlist: CreateWishlistDto, @Req() req) {
+  return this.wishlistsService.create(req.user, wishlist);
+}
+  
+@Get()
+findAll() {
+  return this.wishlistsService.findAll();
+}
 
-  @Post()
-  @UseInterceptors(RemoveUserInfoFromWishlistInterceptor)
-  async create(
-    @Body() createWishlistDto: CreateWishlistDto,
-    @Req() { user }: { user: User },
-  ) {
-    return await this.wishlistsService.create(createWishlistDto, user);
-  }
+@Get(':id')
+findOne(@Param('id') id: string) {
+  return this.wishlistsService.findOne(+id);
+}
 
-  @Get()
-  @UseInterceptors(RemoveUserInfoFromWishlistInterceptor)
-  async findAll() {
-    return await this.wishlistsService.findAll();
-  }
+@Patch(':id')
+update(
+  @Param('id') id: string,
+  @Body() wishlist: UpdateWishlistDto,
+  @Req() req,
+) {
+  return this.wishlistsService.update(+id, wishlist, req.user.id);
+}
 
-  @Get(':id')
-  @UseInterceptors(RemoveUserInfoFromWishlistInterceptor)
-  async findOne(@Param('id') id: string) {
-    return await this.wishlistsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  @UseInterceptors(RemoveUserInfoFromWishlistInterceptor)
-  async update(
-	  @Param('id') id: string, 
-	  @Req() req, 
-	  @Body() updateWishlistDto: UpdateWishlistDto) 
-	  { 
-
-    if (isNaN(+id)) { 
-      return new BadRequestException('Переданный id не явялется числом'); 
-    } 
-
-    return this.wishlistsService.update(+id, updateWishlistDto, req.user.id); 
-
-  }
-
-  @Delete(':id')
-  @UseInterceptors(RemoveUserInfoFromWishlistInterceptor)
-  async remove(@Param('id') id: string, @Req() { user }: { user: User }) {
-    return await this.wishlistsService.remove(+id, user);
+@Delete(':id')
+remove(@Param('id') wishListId: string, @Req() req) {
+  return this.wishlistsService.remove(+wishListId, req.user.id);
   }
 }
