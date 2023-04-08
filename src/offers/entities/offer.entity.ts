@@ -1,39 +1,29 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
-  CreateDateColumn,
-  UpdateDateColumn,
   ManyToOne,
 } from 'typeorm';
-import { IsPositive, IsBoolean } from 'class-validator';
+import { BaseEntity } from 'src/general/baseEntity';
 import { User } from './../../users/entities/user.entity';
 import { Wish } from './../../wishes/entities/wish.entity';
 
 @Entity()
-export class Offer {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
-
+export class Offer extends BaseEntity {
   @ManyToOne(() => User, (user) => user.offers)
   user: User;
 
-  @ManyToOne(() => Wish, (wish) => wish.offers, { onDelete: 'CASCADE' })
-  item: Wish;
+  @ManyToOne(() => Wish, (wish) => wish.offers)
+  item: User;
 
-  @Column()
-  @IsPositive()
+  @Column({
+    type: 'numeric',
+    scale: 2,
+  })
   amount: number;
 
   @Column({
-    default: false,
+    type: 'boolean',
+    default: 'false',
   })
-  @IsBoolean()
   hidden: boolean;
 }

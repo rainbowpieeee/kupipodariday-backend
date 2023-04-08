@@ -3,6 +3,7 @@ import { User } from '../users/entities/user.entity';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from 'src/users/users.service';
 import { HashService } from 'src/hash/hash.service';
+import { UnauthorizedException } from '@nestjs/common/exceptions';
 
 @Injectable()
 export class AuthService {
@@ -14,24 +15,16 @@ export class AuthService {
 
   auth(user: User) {
     const payload = { sub: user.id };
-    console.log(payload);
     return { access_token: this.jwtService.sign(payload) };
   }
 
-  async validatePassword(username: string, password: string) {
-    const user = await this.usersService.findByUsername(username);
+  async validatePassword(username: string, pass: string) {
+    const user = await this.usersService.findUserForAuth(username);
 
-    const validationResult = await this.hashService.compare(
-      password,
-      user.password,
-    );
-
-    if (validationResult) {
-      const { password, ...userWithoutPassword } = user;
-
-      return userWithoutPassword;
-    }
-
-    return null;
+    if ( !user || !this.hashService.compare(pass, user.password)) {
+	  throw new UnauthorizedException('Неправильный логин или пароль');
+	}
+	const { password, ...result } = user;
+	return result;
   }
 }

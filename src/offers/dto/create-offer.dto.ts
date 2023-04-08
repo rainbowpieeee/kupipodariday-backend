@@ -1,15 +1,13 @@
-import { IsNotEmpty, IsNumber, IsPositive, IsBoolean } from 'class-validator';
+import { IsNumber, IsOptional, IsBoolean } from 'class-validator';
 
 export class CreateOfferDto {
   @IsNumber()
-  @IsNotEmpty()
-  @IsPositive()
   amount: number;
 
   @IsBoolean()
+  @IsOptional()
   hidden: boolean;
 
   @IsNumber()
-  @IsNotEmpty()
-  item: number;
+  itemId: number;
 }
